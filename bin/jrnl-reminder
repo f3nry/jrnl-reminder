@@ -1,0 +1,82 @@
+#!/bin/bash
+
+############################################################################
+# Print warning in stderr.                                                 #
+# Args:                                                                    #
+#      -$1: Message to print.                                              #
+# Result: print warning.                                                   #
+print_warn()
+{
+    # Extract argument
+    local msg="$1"
+
+    # Print the error message if quiet mode is not activated.
+    if [[ "$IS_QUIET" != 'true' ]]; then
+        echo "Warning: $msg" 1>&2
+    fi
+}
+
+function setup()
+{
+    print_warn "Daemon started - $(date +'%c')"
+
+    log "Writing PID file.."
+
+    PIDFILE=/tmp/jrnl-reminder.pid
+    echo $$ > $PIDFILE
+
+    log "Setting up traps"
+
+    trap "rm $PIDFILE; exit" SIGHUP SIGINT SIGTERM
+}
+
+function notify ()
+{
+    /usr/bin/osascript -e "display notification \"$*\""
+}
+
+function log ()
+{
+    Now=$(date "+%F %l:%M")
+
+    echo "[$Now] $*"
+}
+
+function loop ()
+{
+    while [ true ]
+    do
+        LastJrnlTime=$(jrnl -n1 | cut -d' ' -f1,2 | head -n1)
+        LastJrnlUnixTime=$(date -j -f "%F %l:%M" "$LastJrnlTime" "+%s")
+        IntervalAgo=$(date -j -v -$Interval "+%s")
+
+        log "Last Jrnl Time: $LastJrnlTime"
+
+        if [ $LastJrnlUnixTime -lt $IntervalAgo ]
+        then
+            notify "Time to journal! Last journal entry at " $LastJrnlTime
+        fi
+        sleep 60
+    done
+}
+
+while :; do
+    case $1 in
+        -i|--interval)
+            Interval=$2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            break
+    esac
+
+    shift
+done
+
+log "Interval: $Interval"
+
+setup
+loop
