@@ -7,7 +7,7 @@ When running, the utility will write a notification to the notication center
 if a jrnl entry hasn't been written in a certain interval.
 
 
-** Note: only works with the OSX notification center **
+**Note: only works with the OSX notification center**
 
 ## Usage
 
