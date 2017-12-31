@@ -1,25 +1,7 @@
 #!/bin/bash
 
-############################################################################
-# Print warning in stderr.                                                 #
-# Args:                                                                    #
-#      -$1: Message to print.                                              #
-# Result: print warning.                                                   #
-print_warn()
-{
-    # Extract argument
-    local msg="$1"
-
-    # Print the error message if quiet mode is not activated.
-    if [[ "$IS_QUIET" != 'true' ]]; then
-        echo "Warning: $msg" 1>&2
-    fi
-}
-
 function setup()
 {
-    print_warn "Daemon started - $(date +'%c')"
-
     log "Writing PID file.."
 
     PIDFILE=/tmp/jrnl-reminder.pid
@@ -37,9 +19,7 @@ function notify ()
 
 function log ()
 {
-    Now=$(date "+%F %l:%M")
-
-    echo "[$Now] $*"
+    echo "[$(date "+%F%l:%M")] $*"
 }
 
 function loop ()
@@ -47,7 +27,7 @@ function loop ()
     while [ true ]
     do
         LastJrnlTime=$(jrnl -n1 | cut -d' ' -f1,2 | head -n1)
-        LastJrnlUnixTime=$(date -j -f "%F %l:%M" "$LastJrnlTime" "+%s")
+        LastJrnlUnixTime=$(date -j -f "%F %k:%M" "$LastJrnlTime" "+%s")
         IntervalAgo=$(date -j -v -$Interval "+%s")
 
         log "Last Jrnl Time: $LastJrnlTime"
@@ -75,6 +55,12 @@ while :; do
 
     shift
 done
+
+if [ -z $Interval ]
+then
+    echo "Interval not set. Pass the -i option with the interval (example: 15M for 15 minutes)."
+    exit 1
+fi
 
 log "Interval: $Interval"
 
